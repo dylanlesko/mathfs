@@ -47,6 +47,7 @@ static int hello_getattr(const char *path, struct stat *stbuf)
 static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			 off_t offset, struct fuse_file_info *fi)
 {
+	printf("readdir(\"%s\"\n", path);
 	(void) offset;
 	(void) fi;
 
@@ -69,6 +70,7 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 static int hello_open(const char *path, struct fuse_file_info *fi)
 {
+	printf("open(\"%s\"\n", path);
 	if (strcmp(path, hello_path) != 0)
 		return -ENOENT;
 
@@ -81,6 +83,7 @@ static int hello_open(const char *path, struct fuse_file_info *fi)
 static int hello_read(const char *path, char *buf, size_t size, off_t offset,
 		      struct fuse_file_info *fi)
 {
+	printf("read(\"%s\"\n", path);
 	size_t len;
 	(void) fi;
 	if(strcmp(path, hello_path) != 0)
