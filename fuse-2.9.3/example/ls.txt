@@ -1,0 +1,11 @@
+ls:
+	- Opendir
+	- readdir
+	- getattr
+
+cat:
+	- getattr with /hello
+	- open path with /hello
+	- read with /hello
+	- getattr with /hello
+	

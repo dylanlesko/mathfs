@@ -16,30 +16,64 @@
 #include <errno.h>
 #include <fcntl.h>
 
-static const char *hello_str = "Hello World!\n";
-static const char *hello_path = "/hello";
+#define TABLE_SIZE 9
+static const char *paths[TABLE_SIZE];
+static const char *strings[TABLE_SIZE];
 
+int compareFile(const char *path, const char *paths[]);
+const char *returnMatch(const char *path, const char *paths[], const char *strings[]);
+
+
+// Returns 1 if we find a match. Returns 0 otherwise
+int compareFile(const char *path, const char *paths[]) {
+	int i;
+	for(i = 0; i < TABLE_SIZE; i++) {
+		if(strcmp(path,paths[i]) == 0)
+			return 1;
+	}
+	
+	return 0;
+
+}
+
+const char *returnMatch(const char *path, const char *paths[], const char *strings[]) {
+	int i;
+	for(i = 0; i < TABLE_SIZE; i++) {
+		if(strcmp(path,paths[i]) == 0)
+			return strings[i];	
+	}
+
+	const char *null;
+	null = NULL;
+	return null;
+
+}
+
+// This function determines whether the path is a file or a directory
 static int hello_getattr(const char *path, struct stat *stbuf)
 {
-	printf("getattr(\"%s\"\n", path);	
-	int res = 0;
+	int res; res = 0;
+
+	printf("\t\t\tgetattr with path %s\n",path);
+
 
 	memset(stbuf, 0, sizeof(struct stat));
+
 	if (strcmp(path, "/") == 0) {
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
-	} else if (strcmp(path, hello_path) == 0) {
+	} else if(compareFile(path,paths)) {
+
+		// Find the corresponding string to get the size
+		const char *path_string;
+		path_string = returnMatch(path,paths,strings);
+		
 		stbuf->st_mode = S_IFREG | 0444;
 		stbuf->st_nlink = 1;
-		stbuf->st_size = strlen(hello_str);
-	} else if (strcmp(path, "/add") == 0){
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;	
-	}else if (strcmp(path, "/mul") == 0){
-		stbuf->st_mode = S_IFDIR | 0755;
-		stbuf->st_nlink = 2;	
-	}else
+		stbuf->st_size = strlen(path_string);
+	} else
 		res = -ENOENT;
+
 
 	return res;
 }
@@ -47,6 +81,9 @@ static int hello_getattr(const char *path, struct stat *stbuf)
 static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			 off_t offset, struct fuse_file_info *fi)
 {
+
+	printf("\t\t\treaddir with path %s\n",path);
+	
 	(void) offset;
 	(void) fi;
 
@@ -55,25 +92,28 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 	filler(buf, ".", NULL, 0);
 	filler(buf, "..", NULL, 0);
-	//filler(buf, hello_path + 1, NULL, 0);
-	filler(buf, "add", NULL, 0);
-	filler(buf, "sub", NULL, 0);
-	filler(buf, "mul", NULL, 0);
-	filler(buf, "fib", NULL, 0);
-	filler(buf, "factor", NULL, 0);
-	filler(buf, "div", NULL, 0);
-	filler(buf, "exp", NULL, 0);
+
+	int i;
+	for(i = 0; i < TABLE_SIZE; i++) 
+		filler(buf, paths[i] + 1, NULL, 0);
+	
 
 	return 0;
 }
 
 static int hello_open(const char *path, struct fuse_file_info *fi)
 {
-	if (strcmp(path, hello_path) != 0)
+
+	printf("\t\t\topen with path %s\n",path);
+	fi = fi;
+
+	// No match	
+	if (compareFile(path,paths) == 0)
 		return -ENOENT;
 
 	if ((fi->flags & 3) != O_RDONLY)
 		return -EACCES;
+	
 
 	return 0;
 }
@@ -81,16 +121,23 @@ static int hello_open(const char *path, struct fuse_file_info *fi)
 static int hello_read(const char *path, char *buf, size_t size, off_t offset,
 		      struct fuse_file_info *fi)
 {
+
+	printf("\t\t\tread with path %s\n",path);
+
 	size_t len;
 	(void) fi;
-	if(strcmp(path, hello_path) != 0)
+	if(compareFile(path,paths) == 0)
 		return -ENOENT;
 
-	len = strlen(hello_str);
+	const char *path_str;
+	path_str = returnMatch(path,paths,strings);
+
+	len = strlen(path_str);
 	if (offset < len) {
 		if (offset + size > len)
 			size = len - offset;
-		memcpy(buf, hello_str + offset, size);
+		memcpy(buf, path_str + offset, size);
+		
 	} else
 		size = 0;
 
@@ -106,6 +153,25 @@ static struct fuse_operations hello_oper = {
 
 int main(int argc, char *argv[])
 {
-	//printf("Calling hello");
+	paths[0] = "/factor";
+	paths[1] = "/fib";
+	paths[2] = "/add";
+	paths[3] = "/sub";
+	paths[4] = "/mul";
+	paths[5] = "/div";
+	paths[6] = "/exp";
+	paths[7] = "/hello";
+	paths[8] = "/sup";
+
+	strings[0] = "Factor\n";
+	strings[1] = "Fib\n";
+	strings[2] = "Add\n";
+	strings[3] = "Sub\n";
+	strings[4] = "Mul\n";
+	strings[5] = "Div\n";
+	strings[6] = "Exp\n";
+	strings[7] = "Hello World!\n";
+	strings[8] = "Hi There!\n";
+
 	return fuse_main(argc, argv, &hello_oper, NULL);
 }

@@ -17,7 +17,7 @@ old_library='libfuse.a'
 inherited_linker_flags=' -pthread'
 
 # Libraries that this one depends upon.
-dependency_libs=' -ldl'
+dependency_libs=' -lrt -ldl'
 
 # Names of additional weak libraries provided by this library
 weak_library_names=''

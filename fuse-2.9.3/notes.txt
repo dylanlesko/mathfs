@@ -1,0 +1,16 @@
+					Enlightenment
+
+hello_getattr: Determines whether the path is a file or directory
+hello_readdir: Checks to see whether the given path is a directory, then fills up the buffer with the contents of the directory. The buffer is what gets printed out to the screen
+hello_open: checks to see whether the file exists, and then opens it
+hello_read: checks to see whether the file exists, finds the corresponding string, then loads the string into the buffer to be displayed.
+
+Approach:
+	- Created a table with path names and corresponding strings
+	- Everything in the table is a file (for now).
+	- Mimicked the hello world example in order to get ls and cat to work on all the files.
+
+Going forward:
+	- Change the files into directories
+	- Create all the doc files and their contents
+	- Implement the path recognition (use strtok for it)
