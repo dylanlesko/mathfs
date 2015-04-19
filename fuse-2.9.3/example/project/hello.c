@@ -14,8 +14,8 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#define TABLE_SIZE 9
-static const char *paths[TABLE_SIZE];
+#define TABLE_SIZE 7
+static const char *dirPaths[TABLE_SIZE];
 static const char *strings[TABLE_SIZE];
 
 // This function determines whether the path is a file or a directory
@@ -31,15 +31,15 @@ static int hello_getattr(const char *path, struct stat *stbuf)
 	if (strcmp(path, "/") == 0) {
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
-	} else if(compareFile(path,paths)) {
+	} else if(compareDirs(path,dirPaths)) {
+		stbuf->st_mode = S_IFDIR | 0755;
+		stbuf->st_nlink = 2;
 
-		// Find the corresponding string to get the size
-		const char *path_string;
-		path_string = returnMatch(path,paths,strings);
-		
+		/*
 		stbuf->st_mode = S_IFREG | 0444;
 		stbuf->st_nlink = 1;
 		stbuf->st_size = strlen(path_string);
+		*/
 	} else
 		res = -ENOENT;
 
@@ -64,7 +64,7 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 	int i;
 	for(i = 0; i < TABLE_SIZE; i++) 
-		filler(buf, paths[i] + 1, NULL, 0);
+		filler(buf, dirPaths[i] + 1, NULL, 0);
 	
 
 	return 0;
@@ -77,7 +77,7 @@ static int hello_open(const char *path, struct fuse_file_info *fi)
 	fi = fi;
 
 	// No match	
-	if (compareFile(path,paths) == 0)
+	if (compareDirs(path,dirPaths) == 0)
 		return -ENOENT;
 
 	if ((fi->flags & 3) != O_RDONLY)
@@ -95,11 +95,11 @@ static int hello_read(const char *path, char *buf, size_t size, off_t offset,
 
 	size_t len;
 	(void) fi;
-	if(compareFile(path,paths) == 0)
+	if(compareDirs(path,dirPaths) == 0)
 		return -ENOENT;
 
 	const char *path_str;
-	path_str = returnMatch(path,paths,strings);
+	path_str = returnMatch(path,dirPaths,strings);
 
 	len = strlen(path_str);
 	if (offset < len) {
@@ -123,7 +123,7 @@ static struct fuse_operations hello_oper = {
 
 int main(int argc, char *argv[])
 {
-	initializeFS(paths,strings);
+	initializeFS(dirPaths,strings);
 	return fuse_main(argc, argv, &hello_oper, NULL);
 }
 

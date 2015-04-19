@@ -15,19 +15,15 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#define TABLE_SIZE 9
-static const char *paths[TABLE_SIZE];
+#define TABLE_SIZE 7
+static const char *dirPaths[TABLE_SIZE];
 static const char *strings[TABLE_SIZE];
 
-int compareFile(const char *path, const char *paths[]);
-const char *returnMatch(const char *path, const char *paths[], const char *strings[]);
-
-
 // Returns 1 if we find a match. Returns 0 otherwise
-int compareFile(const char *path, const char *paths[]) {
+int compareDirs(const char *path, const char *dirPaths[]) {
 	int i;
 	for(i = 0; i < TABLE_SIZE; i++) {
-		if(strcmp(path,paths[i]) == 0)
+		if(strcmp(path,dirPaths[i]) == 0)
 			return 1;
 	}
 	
@@ -35,10 +31,10 @@ int compareFile(const char *path, const char *paths[]) {
 
 }
 
-const char *returnMatch(const char *path, const char *paths[], const char *strings[]) {
+const char *returnMatch(const char *path, const char *dirPaths[], const char *strings[]) {
 	int i;
 	for(i = 0; i < TABLE_SIZE; i++) {
-		if(strcmp(path,paths[i]) == 0)
+		if(strcmp(path,dirPaths[i]) == 0)
 			return strings[i];	
 	}
 
@@ -48,18 +44,16 @@ const char *returnMatch(const char *path, const char *paths[], const char *strin
 
 }
 
-void initializeFS(const char *paths[], const char *strings[]) {
+void initializeFS(const char *dirPaths[], const char *strings[]) {
 
 
-	paths[0] = "/factor";
-        paths[1] = "/fib";
-        paths[2] = "/add";
-        paths[3] = "/sub";
-        paths[4] = "/mul";
-        paths[5] = "/div";
-        paths[6] = "/exp";
-        paths[7] = "/hello";
-        paths[8] = "/sup";
+	dirPaths[0] = "/factor";
+        dirPaths[1] = "/fib";
+        dirPaths[2] = "/add";
+        dirPaths[3] = "/sub";
+        dirPaths[4] = "/mul";
+        dirPaths[5] = "/div";
+        dirPaths[6] = "/exp";
 
         strings[0] = "Factor\n";
         strings[1] = "Fib\n";
@@ -68,6 +62,4 @@ void initializeFS(const char *paths[], const char *strings[]) {
         strings[4] = "Mul\n";
         strings[5] = "Div\n";
         strings[6] = "Exp\n";
-        strings[7] = "Hello World!\n";
-        strings[8] = "Hi There!\n";
 }

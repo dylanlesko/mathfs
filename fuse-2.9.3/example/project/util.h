@@ -4,7 +4,7 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#define TABLE_SIZE 9
+#define TABLE_SIZE 7
 static const char *paths[TABLE_SIZE];
 static const char *strings[TABLE_SIZE];
 
