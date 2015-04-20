@@ -16,8 +16,6 @@
 #include <fcntl.h>
 
 #define TABLE_SIZE 7
-static const char *dirPaths[TABLE_SIZE];
-static const char *strings[TABLE_SIZE];
 
 // Returns 1 if we find a match. Returns 0 otherwise
 int compareDirs(const char *path, const char *dirPaths[]) {
@@ -31,11 +29,22 @@ int compareDirs(const char *path, const char *dirPaths[]) {
 
 }
 
-const char *returnMatch(const char *path, const char *dirPaths[], const char *strings[]) {
+int compareDocs(const char *path, const char *docPaths[]) {
 	int i;
 	for(i = 0; i < TABLE_SIZE; i++) {
-		if(strcmp(path,dirPaths[i]) == 0)
-			return strings[i];	
+		if(strcmp(path,docPaths[i]) == 0)
+			return 1;
+	}
+	
+	return 0;
+
+}
+
+const char *returnDoc(const char *path, const char *docPaths[], const char *docs[]) {
+	int i;
+	for(i = 0; i < TABLE_SIZE; i++) {
+		if(strcmp(path,docPaths[i]) == 0)
+			return docs[i];	
 	}
 
 	const char *null;
@@ -44,8 +53,23 @@ const char *returnMatch(const char *path, const char *dirPaths[], const char *st
 
 }
 
-void initializeFS(const char *dirPaths[], const char *strings[]) {
 
+const char *returnMatch(const char *path, const char *dirPaths[], const char *docs[]) {
+	int i;
+	for(i = 0; i < TABLE_SIZE; i++) {
+		if(strcmp(path,dirPaths[i]) == 0)
+			return dirPaths[i];	
+	}
+
+	const char *null;
+	null = NULL;
+	return null;
+
+}
+
+void initializeFS(const char *dirPaths[], const char *docPaths[], const char *docs[]) {
+
+	printf("\t\t\tCall to initialize\n");
 
 	dirPaths[0] = "/factor";
         dirPaths[1] = "/fib";
@@ -55,11 +79,19 @@ void initializeFS(const char *dirPaths[], const char *strings[]) {
         dirPaths[5] = "/div";
         dirPaths[6] = "/exp";
 
-        strings[0] = "Factor\n";
-        strings[1] = "Fib\n";
-        strings[2] = "Add\n";
-        strings[3] = "Sub\n";
-        strings[4] = "Mul\n";
-        strings[5] = "Div\n";
-        strings[6] = "Exp\n";
+	docPaths[0] = "/factor/doc";
+        docPaths[1] = "/fib/doc";
+        docPaths[2] = "/add/doc";
+        docPaths[3] = "/sub/doc";
+        docPaths[4] = "/mul/doc";
+        docPaths[5] = "/div/doc";
+        docPaths[6] = "/exp/doc";
+
+        docs[0] = "Show the prime factors of a number.\nThe file factor/n contains the prime factors of n.\n";
+        docs[1] = "The file fib/n contains the first n fibonacci numbers.\n";
+        docs[2] = "Add two numbers.\nThe file add/a/b contains the sum a+b\n";
+        docs[3] = "Subtract two numbers.\nThe file sub/a/b contains the difference a-b.\n";
+        docs[4] = "Multiply two numbers.\nThe file mul/a/b contains the product a*b.\n";
+        docs[5] = "Divide two numbers.\nThe file div/a/b contains the quotient of a/b.\n";
+        docs[6] = "Raise a number to an exponent.\nThe file exp/a/b contains a raised to the power of b.\n";
 }
