@@ -39,8 +39,16 @@ static char* doMath(char** inp){
 		double c = pow(a,b);
 		sprintf(toReturn, "%f\n", c);
 	}else if(strcmp("factor", inp[0]) == 0){
+				int ch;
+		for(ch=0;ch<strlen(inp[1]);ch++){
+			if(isdigit(inp[1][ch]) == 0){
+				sprintf(toReturn, "Factor requires an integer input\n");
+				return toReturn;
+			}
+		}
 		int a = atoi(inp[1]);
-	
+		
+
 		while (a%2 == 0){
 			char* addPart =  (char*)malloc(sizeof(char)*2048);
 //			printf("%d ", 2);
@@ -73,6 +81,14 @@ static char* doMath(char** inp){
 		
 		//sprintf(toReturn, "%d\n", a);
 	}else if(strcmp("fib", inp[0]) == 0){
+		int ch;
+		for(ch=0;ch<strlen(inp[1]);ch++){
+			if(isdigit(inp[1][ch]) == 0){
+				sprintf(toReturn, "Fib requires an integer input\n");
+				return toReturn;
+			}
+		}
+
 		long unsigned int n = atoi(inp[1]);
 		long unsigned int a = 0, b = 1, c, i;
 		if( n == 0){
@@ -133,8 +149,8 @@ int main(){
 	printf("\n\n");
 
 	char *inps[3];
-	inps[0]="div";
-	inps[1]="2";
+	inps[0]="factor";
+	inps[1]="5.4";
 	inps[2]="1";
 	
 	char* outp = doMath(inps);
