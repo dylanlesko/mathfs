@@ -20,26 +20,20 @@
 #define MAKE_WHITE "\e[37m"
 #define MAKE_UNDERLINE "\e[4m"
 
+#define FREE(ptr) \
+	do{ \
+		free((ptr)); \
+		(ptr)=NULL; \
+	}while(0) 
 
-#define TABLE_SIZE 10
+#define TABLE_SIZE 7
 static const char *paths[TABLE_SIZE];
 static const char *docs[TABLE_SIZE];
 
-int compareFile(const char *path, const char *paths[]);
 const char *returnMatch(const char *path, const char *paths[], const char *strings[]);
+int is_dir( const char *path, const char *paths[] );
+int is_path( const char *path, const char *paths[] );
 
-
-// Returns 1 if we find a match. Returns 0 otherwise
-int compareFile(const char *path, const char *paths[]) {
-	int i;
-	for(i = 0; i < TABLE_SIZE; i++) {
-		if(strncmp(path,paths[i], strlen(paths[i])) == 0)
-		//if(strcmp(path,paths[i]) == 0)
-			return 1;
-	}
-	
-	return 0;
-}
 
 int is_dir( const char *path, const char *paths[] )
 {
@@ -106,41 +100,43 @@ static int mathfs_getattr(const char *path, struct stat *stbuf)
 		tempToken = strtok(tempToken, "/");
 		char *hold;
 
-
 		char *operation;
 		char *arg1;
 		char *arg2;
 
 		operation = malloc(strlen(tempToken) + 1);
 		strcpy(operation, tempToken);
-	
 
 		while( tempToken != NULL )
 		{
 			printf(MAKE_YELLOW"\t\ttoken: (\"%s\")"RESET_FORMAT, tempToken);
 			printf("\n");
 			strcpy(hold, tempToken);
-			tempToken = strtok(NULL, "/");
+
 			argCount++;
-			if(argCount < 3)
+			if(argCount == 1)
 			{
-				//strcpy(pathArray[argCount], tempToken);
+				strcpy(arg1, tempToken);
 			}
+			else if(argCount == 2)
+			{
+				strcpy(arg2, tempToken);
+			}
+
+			tempToken = strtok(NULL, "/");
 		}
 
-	//	printf("first: %s", pathArray[0]);
 
 		printf("count: %d\n", argCount);
+		printf("op: %s\n", operation);
+		printf("1: %s\n", arg1);
+		printf("2: %s\n", arg2);
 		/*
 		*	count = 1 		math/add
 		*	count = 2 		math/add/1
 		*	count = 3 		math/add/1/2
 		*/
-		if( argCount == 1 )
-		{
-			printf("operation dir\n");
-		}
-		else if( argCount == 2 )
+		if( argCount == 2 )
 		{
 			if(strcmp(hold, "doc") == 0 )
 			{
@@ -148,6 +144,13 @@ static int mathfs_getattr(const char *path, struct stat *stbuf)
 				stbuf->st_nlink = 1;
 				stbuf->st_size = strlen(path);
 			}	
+			else if( (strcmp(operation, "fib") == 0) || (strcmp(operation, "factor") == 0) )
+			{
+				printf(MAKE_BLUE"These should have one arg.."RESET_FORMAT);
+				stbuf->st_mode = S_IFREG | 0444;
+				stbuf->st_nlink = 1;
+				stbuf->st_size = strlen(path);
+			}
 			else
 			{
 				stbuf->st_mode = S_IFDIR | 0444;
@@ -157,17 +160,26 @@ static int mathfs_getattr(const char *path, struct stat *stbuf)
 		}
 		else if( argCount == 3)
 		{
-			stbuf->st_mode = S_IFREG | 0444;
-			stbuf->st_nlink = 1;
-			stbuf->st_size = strlen(path);
+			if( (strcmp(operation, "fib") != 0) && (strcmp(operation, "factor") != 0) )
+			{
+				stbuf->st_mode = S_IFDIR | 0444;
+				stbuf->st_nlink = 1;
+				stbuf->st_size = strlen(path);
+			}
+		}
+		else
+		{
+			res = -ENOENT;
 		}
 
-		free(tempToken);
-		free(operation);
+		FREE(tempToken);
+		FREE(operation);
 	}
 
 	else
+	{
 		res = -ENOENT;
+	}
 	return res;
 }
 
@@ -189,7 +201,7 @@ static int mathfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, o
 		for(i = 0; i < TABLE_SIZE; i++) 
 			filler(buf, paths[i] + 1, NULL, 0);
 	}
-	else if(compareFile(path,paths))
+	else if(is_dir(path,paths))
 	{
 		const char *newString = "/doc";		
 		filler(buf, newString + 1, NULL, 0);
@@ -212,7 +224,7 @@ static int mathfs_open(const char *path, struct fuse_file_info *fi)
 	fi = fi;
 
 	// No match	
-	if (compareFile(path,paths) == 0)
+	if (is_dir(path,paths) == 0)
 		return -ENOENT;
 
 	if ((fi->flags & 3) != O_RDONLY)
@@ -229,7 +241,7 @@ static int mathfs_read(const char *path, char *buf, size_t size, off_t offset, s
 
 	size_t len;
 	(void) fi;
-	if(compareFile(path,paths) == 0)
+	if(is_dir(path,paths) == 0)
 		return -ENOENT;
 
 	const char *path_str;
@@ -263,9 +275,6 @@ int main(int argc, char **argv)
 	paths[4] = "/mul";
 	paths[5] = "/div";
 	paths[6] = "/exp";
-	paths[7] = "/hello";
-	paths[8] = "/sup";
-	paths[9] = "/add/f";
 
 	docs[0] = "Factor\n";
 	docs[1] = "Fib\n";
@@ -274,8 +283,6 @@ int main(int argc, char **argv)
 	docs[4] = "Mul\n";
 	docs[5] = "Div\n";
 	docs[6] = "Exp\n";
-	docs[7] = "Hello World!\n";
-	docs[8] = "Hi There!\n";
 
     return fuse_main(argc, argv, &mathfs_oper, NULL);
 }
