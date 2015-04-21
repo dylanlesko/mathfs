@@ -28,7 +28,7 @@ static char* doMath(char** inp){
 		double b = strtod(inp[2], NULL);
 		
 		if(b==0){
-			sprintf(toReturn, "Trying to divide by zero\n");
+			sprintf(toReturn, "Error: Trying to divide by zero\n");
 			return toReturn;
 		}
 		double c = a / b;
@@ -42,7 +42,7 @@ static char* doMath(char** inp){
 				int ch;
 		for(ch=0;ch<strlen(inp[1]);ch++){
 			if(isdigit(inp[1][ch]) == 0){
-				sprintf(toReturn, "Factor requires an integer input\n");
+				sprintf(toReturn, "Error: Factor requires an integer input\n");
 				return toReturn;
 			}
 		}
@@ -84,7 +84,7 @@ static char* doMath(char** inp){
 		int ch;
 		for(ch=0;ch<strlen(inp[1]);ch++){
 			if(isdigit(inp[1][ch]) == 0){
-				sprintf(toReturn, "Fib requires an integer input\n");
+				sprintf(toReturn, "Error: Fib requires an integer input\n");
 				return toReturn;
 			}
 		}
