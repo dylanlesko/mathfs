@@ -21,59 +21,11 @@
 #define MAKE_UNDERLINE "\e[4m"
 
 
-#define TABLE_SIZE 10
-static const char *paths[TABLE_SIZE];
+#define TABLE_SIZE 7 
+static const char *dirPaths[TABLE_SIZE];
+static const char *docPaths[TABLE_SIZE];
 static const char *docs[TABLE_SIZE];
 
-int compareFile(const char *path, const char *paths[]);
-const char *returnMatch(const char *path, const char *paths[], const char *strings[]);
-
-
-// Returns 1 if we find a match. Returns 0 otherwise
-int compareFile(const char *path, const char *paths[]) {
-	int i;
-	for(i = 0; i < TABLE_SIZE; i++) {
-		if(strncmp(path,paths[i], strlen(paths[i])) == 0)
-		//if(strcmp(path,paths[i]) == 0)
-			return 1;
-	}
-	
-	return 0;
-}
-
-int is_dir( const char *path, const char *paths[] )
-{
-	int i;
-	for(i = 0; i < TABLE_SIZE; i++) {
-		if(strcmp(path,paths[i]) == 0)
-			return 1;
-	}
-	return 0;
-}
-
-int is_path( const char *path, const char *paths[] )
-{	
-	int i;
-	for(i = 0; i < TABLE_SIZE; i++) {
-		if(strncmp(path,paths[i], strlen(paths[i])) == 0)
-			return 1;
-	}
-	return 0;
-}
-
-const char *returnMatch(const char *path, const char *paths[], const char *strings[]) {
-	int i;
-	for(i = 0; i < TABLE_SIZE; i++) {
-		//if(strncmp(path,paths[i], strlen(paths[i])) == 0)
-		if(strcmp(path,paths[i]) == 0)
-			return docs[i];	
-	}
-
-	const char *null;
-	null = NULL;
-	return null;
-
-}
 
 // FUSE function implementations.
 static int mathfs_getattr(const char *path, struct stat *stbuf)
@@ -86,19 +38,25 @@ static int mathfs_getattr(const char *path, struct stat *stbuf)
 	int argCount = 0;
 
 	memset(stbuf, 0, sizeof(struct stat));
-
 	if (strcmp(path, "/") == 0) {
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
 	}
-	else if(is_dir(path,paths)) 
+	else if(is_dir(path,dirPaths)) 
 	{
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
 		stbuf->st_size = strlen(path);
 
 	} 
-	else if( is_path( path, paths) )
+	else if(is_doc(path,docPaths))
+	{
+		stbuf->st_mode = S_IFREG | 0444;
+		stbuf->st_nlink = 1;
+		const char *docStr = returnDoc(path,docPaths,docs);
+		stbuf->st_size = strlen(docStr);
+	}
+	else if( is_path( path, dirPaths) )
 	{
 		char *tempToken = malloc(strlen(path) + 1);
 		strcpy(tempToken, path);
@@ -150,8 +108,9 @@ static int mathfs_getattr(const char *path, struct stat *stbuf)
 		free(tempToken);
 	}
 
-	else
+	else {
 		res = -ENOENT;
+	}
 	return res;
 }
 
@@ -171,9 +130,9 @@ static int mathfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, o
 	{
 		int i;
 		for(i = 0; i < TABLE_SIZE; i++) 
-			filler(buf, paths[i] + 1, NULL, 0);
+			filler(buf, dirPaths[i] + 1, NULL, 0);
 	}
-	else if(compareFile(path,paths))
+	else if(compareFile(path,dirPaths))
 	{
 		const char *newString = "/doc";		
 		filler(buf, newString + 1, NULL, 0);
@@ -196,7 +155,9 @@ static int mathfs_open(const char *path, struct fuse_file_info *fi)
 	fi = fi;
 
 	// No match	
-	if (compareFile(path,paths) == 0)
+	if (compareFile(path,dirPaths) == 0)
+		return -ENOENT;
+	else if(compareDoc(path,docPaths) == 0)
 		return -ENOENT;
 
 	if ((fi->flags & 3) != O_RDONLY)
@@ -213,17 +174,18 @@ static int mathfs_read(const char *path, char *buf, size_t size, off_t offset, s
 
 	size_t len;
 	(void) fi;
-	if(compareFile(path,paths) == 0)
+	if(compareDoc(path,docPaths) == 0)
 		return -ENOENT;
 
-	const char *path_str;
-	path_str = returnMatch(path,paths,docs);
+	const char *docStr;
+	docStr = returnDoc(path,docPaths,docs);
 
-	len = strlen(path_str);
+
+	len = strlen(docStr);
 	if (offset < len) {
 		if (offset + size > len)
 			size = len - offset;
-		memcpy(buf, path_str + offset, size);
+		memcpy(buf, docStr + offset, size);
 		
 	} else
 		size = 0;
@@ -240,16 +202,18 @@ static struct fuse_operations mathfs_oper = {
 
 int main(int argc, char **argv)
 {
-	paths[0] = "/factor";
-	paths[1] = "/fib";
-	paths[2] = "/add";
-	paths[3] = "/sub";
-	paths[4] = "/mul";
-	paths[5] = "/div";
-	paths[6] = "/exp";
-	paths[7] = "/hello";
-	paths[8] = "/sup";
-	paths[9] = "/add/f";
+
+/*
+	dirPaths[0] = "/factor";
+	dirPaths[1] = "/fib";
+	dirPaths[2] = "/add";
+	dirPaths[3] = "/sub";
+	dirPaths[4] = "/mul";
+	dirPaths[5] = "/div";
+	dirPaths[6] = "/exp";
+	dirPaths[7] = "/hello";
+	dirPaths[8] = "/sup";
+	dirPaths[9] = "/add/f";
 
 	docs[0] = "Factor\n";
 	docs[1] = "Fib\n";
@@ -260,7 +224,9 @@ int main(int argc, char **argv)
 	docs[6] = "Exp\n";
 	docs[7] = "Hello World!\n";
 	docs[8] = "Hi There!\n";
+*/
 
+	initializeFS(dirPaths, docPaths, docs);
     return fuse_main(argc, argv, &mathfs_oper, NULL);
 }
 
