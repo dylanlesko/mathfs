@@ -106,6 +106,15 @@ static int mathfs_getattr(const char *path, struct stat *stbuf)
 		tempToken = strtok(tempToken, "/");
 		char *hold;
 
+
+		char *operation;
+		char *arg1;
+		char *arg2;
+
+		operation = malloc(strlen(tempToken) + 1);
+		strcpy(operation, tempToken);
+	
+
 		while( tempToken != NULL )
 		{
 			printf(MAKE_YELLOW"\t\ttoken: (\"%s\")"RESET_FORMAT, tempToken);
@@ -113,7 +122,13 @@ static int mathfs_getattr(const char *path, struct stat *stbuf)
 			strcpy(hold, tempToken);
 			tempToken = strtok(NULL, "/");
 			argCount++;
+			if(argCount < 3)
+			{
+				//strcpy(pathArray[argCount], tempToken);
+			}
 		}
+
+	//	printf("first: %s", pathArray[0]);
 
 		printf("count: %d\n", argCount);
 		/*
@@ -148,6 +163,7 @@ static int mathfs_getattr(const char *path, struct stat *stbuf)
 		}
 
 		free(tempToken);
+		free(operation);
 	}
 
 	else
