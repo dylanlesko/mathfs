@@ -127,32 +127,26 @@ static int mathfs_getattr(const char *path, struct stat *stbuf)
 		}
 		else if( argCount == 2 )
 		{
-			stbuf->st_mode = S_IFREG | 0444;
-			stbuf->st_nlink = 1;
-			stbuf->st_size = strlen(path);		}
+			if(strcmp(hold, "doc") == 0 )
+			{
+				stbuf->st_mode = S_IFREG | 0444;
+				stbuf->st_nlink = 1;
+				stbuf->st_size = strlen(path);
+			}	
+			else
+			{
+				stbuf->st_mode = S_IFDIR | 0444;
+				stbuf->st_nlink = 1;
+				stbuf->st_size = strlen(path);		
+			}	
+		}
 		else if( argCount == 3)
 		{
-			stbuf->st_mode = S_IFDIR | 0444;
-			stbuf->st_nlink = 1;
-			stbuf->st_size = strlen(path);
-		}
-
-
-/*
-		if(strcmp(hold, "doc") == 0 )
-		{
 			stbuf->st_mode = S_IFREG | 0444;
 			stbuf->st_nlink = 1;
 			stbuf->st_size = strlen(path);
 		}
-		else
-		{
-			double tempDouble = strtod(hold, NULL);
-			printf(MAKE_UNDERLINE"number: %f"RESET_FORMAT, tempDouble);
-			printf("\n");
 
-		}
-*/
 		free(tempToken);
 	}
 
