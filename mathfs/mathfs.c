@@ -8,32 +8,23 @@
 #include <time.h>
 #include <fuse/fuse.h>
 #include <ctype.h>
- 
-#define RESET_FORMAT "\e[m"
-#define MAKE_GREEN "\e[32m"
-#define MAKE_RED "\e[31m"
-#define MAKE_BLACK "\e[30m"
-#define MAKE_YELLOW "\e[33m"
-#define MAKE_BLUE "\e[34m"
-#define MAKE_PURPLE "\e[35m"
-#define MAKE_CYAN "\e[36m"
-#define MAKE_WHITE "\e[37m"
-#define MAKE_UNDERLINE "\e[4m"
+#include "defs.h"
 
-#define FREE(ptr) \
-	do{ \
-		free((ptr)); \
-		(ptr)=NULL; \
-	}while(0) 
-
-#define TABLE_SIZE 7
 static const char *paths[TABLE_SIZE];
 static const char *docs[TABLE_SIZE];
 
-const char *returnMatch(const char *path, const char *paths[], const char *strings[]);
-int is_dir( const char *path, const char *paths[] );
-int is_path( const char *path, const char *paths[] );
+const char *pathfs[TABLE_SIZE] = { "add", "sub", "mul", "div", "exp", "factor", "fib" };
 
+
+int get_index( const char *path )
+{
+	int i;
+	for(i = 0; i < TABLE_SIZE; i++) {
+		if(strcmp(path,pathfs[i]) == 0)
+			return i;
+	}
+	return -1;	
+}
 
 int is_dir( const char *path, const char *paths[] )
 {
@@ -99,6 +90,7 @@ static int mathfs_getattr(const char *path, struct stat *stbuf)
 		tempToken[strlen(path) + 1] = '\0';
 		tempToken = strtok(tempToken, "/");
 		char *hold;
+		char returnValue[2048];
 
 		char *operation;
 		char *arg1;
@@ -107,13 +99,15 @@ static int mathfs_getattr(const char *path, struct stat *stbuf)
 		operation = malloc(strlen(tempToken) + 1);
 		strcpy(operation, tempToken);
 
+		arg1 = malloc(strlen(path) + 1 );
+		arg2 = malloc(strlen(path) + 1 );
+
 		while( tempToken != NULL )
 		{
 			printf(MAKE_YELLOW"\t\ttoken: (\"%s\")"RESET_FORMAT, tempToken);
 			printf("\n");
 			strcpy(hold, tempToken);
 
-			argCount++;
 			if(argCount == 1)
 			{
 				strcpy(arg1, tempToken);
@@ -122,15 +116,11 @@ static int mathfs_getattr(const char *path, struct stat *stbuf)
 			{
 				strcpy(arg2, tempToken);
 			}
+			argCount++;
 
 			tempToken = strtok(NULL, "/");
 		}
 
-
-		printf("count: %d\n", argCount);
-		printf("op: %s\n", operation);
-		printf("1: %s\n", arg1);
-		printf("2: %s\n", arg2);
 		/*
 		*	count = 1 		math/add
 		*	count = 2 		math/add/1
@@ -149,13 +139,19 @@ static int mathfs_getattr(const char *path, struct stat *stbuf)
 				printf(MAKE_BLUE"These should have one arg.."RESET_FORMAT);
 				stbuf->st_mode = S_IFREG | 0444;
 				stbuf->st_nlink = 1;
-				stbuf->st_size = strlen(path);
+				//stbuf->st_size = strlen(path);
+				strcpy( returnValue, mathOperation( operation, arg1, arg2 ) );
+				stbuf->st_size = strlen(returnValue);
+				printf("\n\tmath returns: %s\n", returnValue);	
 			}
 			else
 			{
 				stbuf->st_mode = S_IFDIR | 0444;
 				stbuf->st_nlink = 1;
-				stbuf->st_size = strlen(path);		
+				//stbuf->st_size = strlen(path);
+				strcpy( returnValue, mathOperation( operation, arg1, arg2 ) );
+				stbuf->st_size = strlen(returnValue);	
+				printf("\n\tmath returns: %s\n", returnValue);	
 			}	
 		}
 		else if( argCount == 3)
@@ -164,7 +160,13 @@ static int mathfs_getattr(const char *path, struct stat *stbuf)
 			{
 				stbuf->st_mode = S_IFDIR | 0444;
 				stbuf->st_nlink = 1;
-				stbuf->st_size = strlen(path);
+				strcpy( returnValue, mathOperation( operation, arg1, arg2 ) );
+				stbuf->st_size = strlen(returnValue);
+				printf("\n\tmath returns: %s\n", returnValue);	
+			}
+			else
+			{
+				res = -ENOENT;
 			}
 		}
 		else
@@ -173,6 +175,8 @@ static int mathfs_getattr(const char *path, struct stat *stbuf)
 		}
 
 		FREE(tempToken);
+		FREE(arg1);
+		FREE(arg2);
 		FREE(operation);
 	}
 
@@ -268,21 +272,21 @@ static struct fuse_operations mathfs_oper = {
 
 int main(int argc, char **argv)
 {
-	paths[0] = "/factor";
-	paths[1] = "/fib";
-	paths[2] = "/add";
-	paths[3] = "/sub";
-	paths[4] = "/mul";
-	paths[5] = "/div";
-	paths[6] = "/exp";
+	paths[0] = "/add";
+	paths[1] = "/sub";
+	paths[2] = "/mul";
+	paths[3] = "/div";
+	paths[4] = "/exp";
+	paths[5] = "/factor";
+	paths[6] = "/fib";
 
-	docs[0] = "Factor\n";
-	docs[1] = "Fib\n";
-	docs[2] = "Add\n";
-	docs[3] = "Sub\n";
-	docs[4] = "Mul\n";
-	docs[5] = "Div\n";
-	docs[6] = "Exp\n";
+	docs[0] = "Add\n";
+	docs[1] = "Sub\n";
+	docs[2] = "Mul\n";
+	docs[3] = "Div\n";
+	docs[4] = "Exp\n";
+	docs[5] = "Factor\n";
+	docs[6] = "Fib\n";
 
     return fuse_main(argc, argv, &mathfs_oper, NULL);
 }
