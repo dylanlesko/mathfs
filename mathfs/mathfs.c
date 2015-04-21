@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <time.h>
 #include <fuse/fuse.h>
+#include <ctype.h>
  
 #define RESET_FORMAT "\e[m"
 #define MAKE_GREEN "\e[32m"
@@ -38,14 +39,33 @@ int compareFile(const char *path, const char *paths[]) {
 	}
 	
 	return 0;
+}
 
+int is_dir( const char *path, const char *paths[] )
+{
+	int i;
+	for(i = 0; i < TABLE_SIZE; i++) {
+		if(strcmp(path,paths[i]) == 0)
+			return 1;
+	}
+	return 0;
+}
+
+int is_path( const char *path, const char *paths[] )
+{	
+	int i;
+	for(i = 0; i < TABLE_SIZE; i++) {
+		if(strncmp(path,paths[i], strlen(paths[i])) == 0)
+			return 1;
+	}
+	return 0;
 }
 
 const char *returnMatch(const char *path, const char *paths[], const char *strings[]) {
 	int i;
 	for(i = 0; i < TABLE_SIZE; i++) {
-		if(strncmp(path,paths[i], strlen(paths[i])) == 0)
-		//if(strcmp(path,paths[i]) == 0)
+		//if(strncmp(path,paths[i], strlen(paths[i])) == 0)
+		if(strcmp(path,paths[i]) == 0)
 			return docs[i];	
 	}
 
@@ -63,38 +83,79 @@ static int mathfs_getattr(const char *path, struct stat *stbuf)
 	
 	printf(MAKE_RED"\t\tgetattr with path (\"%s\")"RESET_FORMAT,path);
 	printf("\n");
-	
+	int argCount = 0;
+
 	memset(stbuf, 0, sizeof(struct stat));
 
 	if (strcmp(path, "/") == 0) {
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
 	}
-	 else if(compareFile(path,paths)) {
-	 	printf(MAKE_GREEN"\t\tgetattr: (\"%s\")"RESET_FORMAT, path);
-	 	printf("\n");
+	else if(is_dir(path,paths)) 
+	{
+		stbuf->st_mode = S_IFDIR | 0755;
+		stbuf->st_nlink = 2;
+		stbuf->st_size = strlen(path);
 
-		char *tempToken;
-		char *wtf;
-		strcpy(wtf, path);// = path;
-		tempToken = strtok(wtf, "/");
-		
-		while(tempToken != NULL)
+	} 
+	else if( is_path( path, paths) )
+	{
+		char *tempToken = malloc(strlen(path) + 1);
+		strcpy(tempToken, path);
+		tempToken[strlen(path) + 1] = '\0';
+		tempToken = strtok(tempToken, "/");
+		char *hold;
+
+		while( tempToken != NULL )
 		{
-			//printf("\ndir: %s\ntoken: %s\n", file, tempToken);
 			printf(MAKE_YELLOW"\t\ttoken: (\"%s\")"RESET_FORMAT, tempToken);
 			printf("\n");
+			strcpy(hold, tempToken);
 			tempToken = strtok(NULL, "/");
+			argCount++;
 		}
 
-		// Find the corresponding string to get the size
-		const char *path_string;
-		path_string = returnMatch(path,paths,docs);
-		
-		stbuf->st_mode = S_IFDIR | 0444;
-		stbuf->st_nlink = 1;
-		stbuf->st_size = strlen(path_string);
-	} 
+		printf("count: %d\n", argCount);
+		/*
+		*	count = 1 		math/add
+		*	count = 2 		math/add/1
+		*	count = 3 		math/add/1/2
+		*/
+		if( argCount == 1 )
+		{
+			printf("operation dir\n");
+		}
+		else if( argCount == 2 )
+		{
+			stbuf->st_mode = S_IFREG | 0444;
+			stbuf->st_nlink = 1;
+			stbuf->st_size = strlen(path);		}
+		else if( argCount == 3)
+		{
+			stbuf->st_mode = S_IFDIR | 0444;
+			stbuf->st_nlink = 1;
+			stbuf->st_size = strlen(path);
+		}
+
+
+/*
+		if(strcmp(hold, "doc") == 0 )
+		{
+			stbuf->st_mode = S_IFREG | 0444;
+			stbuf->st_nlink = 1;
+			stbuf->st_size = strlen(path);
+		}
+		else
+		{
+			double tempDouble = strtod(hold, NULL);
+			printf(MAKE_UNDERLINE"number: %f"RESET_FORMAT, tempDouble);
+			printf("\n");
+
+		}
+*/
+		free(tempToken);
+	}
+
 	else
 		res = -ENOENT;
 	return res;
@@ -109,7 +170,10 @@ static int mathfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, o
 	(void) offset;
 	(void) fi;
 
-	if (strcmp(path, "/") ==0 )
+	filler(buf, ".", NULL, 0);
+	filler(buf, "..", NULL, 0);
+
+	if (strcmp(path, "/") == 0 )
 	{
 		int i;
 		for(i = 0; i < TABLE_SIZE; i++) 
@@ -117,20 +181,13 @@ static int mathfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, o
 	}
 	else if(compareFile(path,paths))
 	{
-	 	printf(MAKE_GREEN"\t\treaddir: (\"%s\")"RESET_FORMAT, path);
-	 	printf("\n");
-
-		const char *newString = "/doc";
-		//strcpy(newString, path);
-		//strcat(newString, "/doc");
-		
+		const char *newString = "/doc";		
 		filler(buf, newString + 1, NULL, 0);
 	}
 	else
 		return -ENOENT;
 
-	filler(buf, ".", NULL, 0);
-	filler(buf, "..", NULL, 0);
+	
 
 
 	
@@ -140,7 +197,8 @@ static int mathfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, o
 
 static int mathfs_open(const char *path, struct fuse_file_info *fi)
 {	
-	printf("\t\t\topen with path %s\n",path);
+	printf(MAKE_GREEN"\t\topen with path (\"%s\")"RESET_FORMAT,path);
+	printf("\n");
 	fi = fi;
 
 	// No match	
@@ -156,7 +214,8 @@ static int mathfs_open(const char *path, struct fuse_file_info *fi)
 
 static int mathfs_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
 {
-	printf("\t\t\tread with path %s\n",path);
+	printf(MAKE_PURPLE"\t\tread with path (\"%s\")"RESET_FORMAT,path);
+	printf("\n");
 
 	size_t len;
 	(void) fi;
