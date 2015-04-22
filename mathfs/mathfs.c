@@ -124,7 +124,6 @@ static int mathfs_getattr( const char *path, struct stat *stbuf )
 					stbuf->st_nlink = 1;
 					strcpy( returnValue, mathOperation( operation, arg1, arg2 ) );
 					stbuf->st_size = strlen( returnValue );
-					//printf("\n\tmath returns: %s\n", returnValue);	
 				}
 				else
 				{
