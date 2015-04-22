@@ -7,6 +7,22 @@
 /* finds the prime factors of a number */
 char* my_factor( char* arg1, char* arg2 )
 {
+	long int a = strtod( arg1, NULL );
+
+	int ch = 0;
+	if( arg1[0] == '-' && strlen(arg1) > 1 )
+	{
+		ch++;
+	}
+
+	for( ; ch<strlen(arg1); ch++)
+	{
+		if(isdigit(arg1[ch]) == 0)
+		{
+			return "Error: Fib requires an integer input\n";
+		}
+	}
+
 	int i;
 	static char toReturn[ MAX_PATH_LEN ];
 	for( i = 0; i < MAX_PATH_LEN; i++ )
@@ -14,7 +30,25 @@ char* my_factor( char* arg1, char* arg2 )
 		toReturn[i] = '\0';
 	}
 
-	int a = atoi( arg1 );
+
+	if( a == 1 )
+	{
+		char* addPart = (char*)malloc( sizeof(char)*MAX_PATH_LEN );
+		sprintf( addPart, "%d\n", 1 );
+		strcat( toReturn, addPart );
+		FREE( addPart );
+
+		return toReturn;
+	}
+
+	if( a < 0 )
+	{
+		char* addPart = (char*)malloc( sizeof(char)*MAX_PATH_LEN );
+		sprintf( addPart, "%d\n", -1 );
+		strcat( toReturn, addPart );
+		FREE( addPart );
+		a = a * -1;
+	}
 
 	while ( a % 2 == 0 )
 	{
@@ -48,6 +82,15 @@ char* my_factor( char* arg1, char* arg2 )
 /* returns every integer up to a specified amount */
 char* my_fib( char* arg1, char* arg2 )
 {
+	int ch;
+	for(ch = 0; ch<strlen(arg1); ch++)
+	{
+		if(isdigit(arg1[ch]) == 0)
+		{
+			return "Error: Fib requires an integer input\n";
+		}
+	}
+
 	int i = 0;
 	static char toReturn[ MAX_PATH_LEN ];
 
@@ -170,8 +213,7 @@ char* my_div( char* arg1, char* arg2 )
 
 	if( b == 0 )
 	{
-		sprintf( toReturn, "Error: Trying to divide by zero\n" );
-		return "inf";
+		return "Error: Trying to divide by zero\n";
 	}
 	double c = a / b;
 	snprintf( toReturn, MAX_PATH_LEN, "%f\n", c );

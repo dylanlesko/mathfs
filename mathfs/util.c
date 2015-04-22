@@ -19,14 +19,55 @@ const char *docsPaths[TABLE_SIZE] =
 /* Returns 1 if the string is a valid number, integer or decimal */
 int is_num( const char *path )
 {
+	int ch = 0;
+	int dotCount = 0;
+
+	if( path[0] == '-' && strlen(path) > 1 )
+	{
+		ch++;
+	}
+
+	for( ; ch<strlen(path); ch++)
+	{
+		if(isdigit(path[ch]) != 0 )
+		{
+			//printf("\n\tchar: %c\n", path[ch]);
+		}
+		else if( path[ch] == '.' )
+		{
+			dotCount++;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+	if(dotCount > 1)
+	{
+		return 0;
+	}
+	return 1;
+	/*
 	char *endPtr;
 	double a = strtod( path, &endPtr );
-
-	if( strncmp( path, endPtr, strlen(path) ) != 0 )
+	int hack;
+	if( (a/10) > strlen(endPtr) )
 	{
+		hack = strlen(path);
+	}
+	else
+	{
+		hack = strlen(endPtr);
+	}
+
+	if( strncmp( path, endPtr, hack ) != 0 )
+	{
+		//printf("\npath: %s\nendptr: %s\n");
 		return 1;
 	}
 	return 0;
+	*/
 }
 
 /* returns the doc description for a corresponding path*/
